@@ -1,0 +1,14 @@
+.DS_Store
+node_modules/
+packages/
+interface_build/
+interface/public/i18n/
+interface/.meteor/dev_bundle
+interface/.meteor/public/
+dist_wallet/
+dist_divan/
+nodes/bith/
+config.json
+divan.log
+npm-debug.log
+/yarn.lock

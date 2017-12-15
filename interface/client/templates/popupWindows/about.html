@@ -1,0 +1,16 @@
+<template name="popupWindows_about">
+    <div class="row popup-windows about">
+        <div class="col col-4 ">
+            <img class="left-overlay {{mode}}" src="{{appIconPath}}" style="position: relative;top: -40px;left: -132%;width: 255%;">
+        </div>
+        <div class="col col-8 ">
+            <h1>{{appName}}</h1>
+            <p>
+                Version {{divan.version}}<br>
+                License {{divan.license}}<br>
+                GitHub <a href="https://github.com/bitherhq/divan" target="_blank">github.com/bitherhq/divan</a>
+            </p>
+            <small>Copyright 2017 Bither Foundation</small>
+        </div>
+    </div>
+</template>
