@@ -105,7 +105,7 @@ This is useful if you have a node running on another machine, though note that
 it's less secure than using the default IPC method.
 
 ```bash
-$ yarn dev:electron --rpc http://localhost:8545
+$ yarn dev:electron --rpc http://localhost:7070
 ```
 
 
