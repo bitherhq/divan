@@ -1,25 +1,25 @@
 {
     "clients": {
-        "Geth": {
-            "version": "1.7.2",
+        "Bith": {
+            "version": "1.7.1",
             "platforms": {
                 "linux": {
                     "x64": {
                         "download": {
-                            "url": "https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.7.2-1db4ecdc.tar.gz",
+                            "url": "https://github.com/bitherhq/go-bither/releases/download/v1.7.1/bith-linux-amd64-1.7.1.tar.gz",
                             "type": "tar",
-                            "md5": "cc4a666fd21ae3627ee8ae974650b2f7",
-                            "bin": "geth-linux-amd64-1.7.2-1db4ecdc/geth"
+                            "md5": "5a609117258f4e2b6e73cd0391c9d77b",
+                            "bin": "bith-linux-amd64-1.7.1/bith"
                         },
-                        "bin": "geth",
+                        "bin": "bith",
                         "commands": {
                             "sanity": {
                                 "args": [
                                     "version"
                                 ],
                                 "output": [
-                                    "Geth",
-                                    "1.7.2"
+                                    "Bith",
+                                    "1.7.1"
                                 ]
                             }
                         }
