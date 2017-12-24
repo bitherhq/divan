@@ -5,11 +5,14 @@ const spawn = require('child_process').spawn;
 const { dialog } = require('electron');
 const Windows = require('./windows.js');
 const Settings = require('./settings');
-const log = require('./utils/logger').create('BitherNode');
 const logRotate = require('log-rotate');
+const path = require('path');
 const EventEmitter = require('events').EventEmitter;
 const Sockets = require('./socketManager');
 const ClientBinaryManager = require('./clientBinaryManager');
+
+import logger from './utils/logger';
+const bitherNodeLog = logger.create('BitherNode');
 
 const DEFAULT_NODE_TYPE = 'bith';
 const DEFAULT_NETWORK = 'main';
@@ -149,16 +152,16 @@ class BitherNode extends EventEmitter {
                 this.emit('runningNodeFound');
             })
             .catch(() => {
-                log.warn('Failed to connect to node. Maybe it\'s not running so let\'s start our own...');
+                bitherNodeLog.warn('Failed to connect to node. Maybe it\'s not running so let\'s start our own...');
 
-                log.info(`Node type: ${this.defaultNodeType}`);
-                log.info(`Network: ${this.defaultNetwork}`);
-                log.info(`SyncMode: ${this.defaultSyncMode}`);
+                bitherNodeLog.info(`Node type: ${this.defaultNodeType}`);
+                bitherNodeLog.info(`Network: ${this.defaultNetwork}`);
+                bitherNodeLog.info(`SyncMode: ${this.defaultSyncMode}`);
 
                 // if not, start node yourself
                 return this._start(this.defaultNodeType, this.defaultNetwork, this.defaultSyncMode)
                     .catch((err) => {
-                        log.error('Failed to start node', err);
+                        bitherNodeLog.error('Failed to start node', err);
                         throw err;
                     });
             });
@@ -171,7 +174,7 @@ class BitherNode extends EventEmitter {
                 throw new Error('Cannot restart node since it was started externally');
             }
 
-            log.info('Restart node', newType, newNetwork);
+            bitherNodeLog.info('Restart node', newType, newNetwork);
 
             return this.stop()
                 .then(() => Windows.loading.show())
@@ -182,7 +185,7 @@ class BitherNode extends EventEmitter {
                     ))
                 .then(() => Windows.loading.hide())
                 .catch((err) => {
-                    log.error('Error restarting node', err);
+                    bitherNodeLog.error('Error restarting node', err);
                     throw err;
                 });
         });
@@ -203,7 +206,7 @@ class BitherNode extends EventEmitter {
 
                 this.state = STATES.STOPPING;
 
-                log.info(`Stopping existing node: ${this._type} ${this._network}`);
+                bitherNodeLog.info(`Stopping existing node: ${this._type} ${this._network}`);
 
                 this._node.stderr.removeAllListeners('data');
                 this._node.stdout.removeAllListeners('data');
@@ -233,12 +236,8 @@ class BitherNode extends EventEmitter {
                 this._stopPromise = null;
             });
         }
-        log.debug('Disconnection already in progress, returning Promise.');
+        bitherNodeLog.debug('Disconnection already in progress, returning Promise.');
         return this._stopPromise;
-    }
-
-    getLog() {
-        return Settings.loadUserData('node.log');
     }
 
     /**
@@ -262,19 +261,19 @@ class BitherNode extends EventEmitter {
      * @return {Promise}
      */
     _start(nodeType, network, syncMode) {
-        log.info(`Start node: ${nodeType} ${network} ${syncMode}`);
+        bitherNodeLog.info(`Start node: ${nodeType} ${network} ${syncMode}`);
 
         const isTestNet = (network === 'test');
 
         if (isTestNet) {
-            log.debug('Node will connect to the test network');
+            bitherNodeLog.debug('Node will connect to the test network');
         }
 
         return this.stop()
             .then(() => {
                 return this.__startNode(nodeType, network, syncMode)
                     .catch((err) => {
-                        log.error('Failed to start node', err);
+                        bitherNodeLog.error('Failed to start node', err);
 
                         this._showNodeErrorDialog(nodeType, network);
 
@@ -282,7 +281,7 @@ class BitherNode extends EventEmitter {
                     });
             })
             .then((proc) => {
-                log.info(`Started node successfully: ${nodeType} ${network} ${syncMode}`);
+                bitherNodeLog.info(`Started node successfully: ${nodeType} ${network} ${syncMode}`);
 
                 this._node = proc;
                 this.state = STATES.STARTED;
@@ -298,7 +297,7 @@ class BitherNode extends EventEmitter {
                         this.state = STATES.CONNECTED;
                     })
                     .catch((err) => {
-                        log.error('Failed to connect to node', err);
+                        bitherNodeLog.error('Failed to connect to node', err);
 
                         if (err.toString().indexOf('timeout') >= 0) {
                             this.emit('nodeConnectionTimeout');
@@ -344,7 +343,7 @@ class BitherNode extends EventEmitter {
             throw new Error(`Node "${nodeType}" binPath is not available.`);
         }
 
-        log.info(`Start node using ${binPath}`);
+        bitherNodeLog.info(`Start node using ${binPath}`);
 
         return new Q((resolve, reject) => {
             this.__startProcess(nodeType, network, binPath, syncMode)
@@ -363,12 +362,12 @@ class BitherNode extends EventEmitter {
         }
 
         return new Q((resolve, reject) => {
-            log.trace('Rotate log file');
+            bitherNodeLog.trace('Rotate log file');
 
             // rotate the log file
-            logRotate(Settings.constructUserDataPath('node.log'), { count: 5 }, (err) => {
+            logRotate(path.join(Settings.userDataPath, 'logs', 'all.log'), { count: 5 }, (err) => {
                 if (err) {
-                    log.error('Log rotation problems', err);
+                    bitherNodeLog.error('Log rotation problems', err);
 
                     return reject(err);
                 }
@@ -419,12 +418,12 @@ class BitherNode extends EventEmitter {
                 const nodeOptions = Settings.nodeOptions;
 
                 if (nodeOptions && nodeOptions.length) {
-                    log.debug('Custom node options', nodeOptions);
+                    bitherNodeLog.debug('Custom node options', nodeOptions);
 
                     args = args.concat(nodeOptions);
                 }
 
-                log.trace('Spawn', binPath, args);
+                bitherNodeLog.trace('Spawn', binPath, args);
 
                 const proc = spawn(binPath, args);
 
@@ -433,7 +432,7 @@ class BitherNode extends EventEmitter {
                     if (STATES.STARTING === this.state) {
                         this.state = STATES.ERROR;
 
-                        log.info('Node startup error');
+                        bitherNodeLog.info('Node startup error');
 
                         // TODO: detect this properly
                         // this.emit('nodeBinaryNotFound');
@@ -444,12 +443,12 @@ class BitherNode extends EventEmitter {
 
                 // we need to read the buff to prevent node from not working
                 proc.stderr.pipe(
-                    fs.createWriteStream(Settings.constructUserDataPath('node.log'), { flags: 'a' })
+                    fs.createWriteStream(path.join(Settings.userDataPath, 'logs', 'all.log'), { flags: 'a' })
                 );
 
                 // when proc outputs data
                 proc.stdout.on('data', (data) => {
-                    log.trace('Got stdout data');
+                    bitherNodeLog.trace('Got stdout data');
 
                     this.emit('data', data);
 
@@ -465,7 +464,7 @@ class BitherNode extends EventEmitter {
                                     error.tag = UNABLE_TO_BIND_PORT_ERROR;
                                 }
 
-                                log.debug(error);
+                                bitherNodeLog.debug(error);
 
                                 return reject(error);
                             }
@@ -475,7 +474,7 @@ class BitherNode extends EventEmitter {
 
                 // when proc outputs data in stderr
                 proc.stderr.on('data', (data) => {
-                    log.trace('Got stderr data');
+                    bitherNodeLog.trace('Got stderr data');
 
                     this.emit('data', data);
                 });
@@ -492,7 +491,7 @@ class BitherNode extends EventEmitter {
                     */
                     setTimeout(() => {
                         if (STATES.STARTING === this.state) {
-                            log.info(`${NODE_START_WAIT_MS}ms elapsed, assuming node started up successfully`);
+                            bitherNodeLog.info(`${NODE_START_WAIT_MS}ms elapsed, assuming node started up successfully`);
 
                             resolve(proc);
                         }
@@ -504,25 +503,25 @@ class BitherNode extends EventEmitter {
 
 
     _showNodeErrorDialog(nodeType, network) {
-        let nodelog = this.getLog();
+        let log = path.join(Settings.userDataPath, 'logs', 'all.log');
 
-        if (nodelog) {
-            nodelog = `...${nodelog.slice(-1000)}`;
+        if (log) {
+            log = `...${log.slice(-1000)}`;
         } else {
-            nodelog = global.i18n.t('divan.errors.nodeStartup');
+            log = global.i18n.t('mist.errors.nodeStartup');
         }
 
         // add node type
-        nodelog = `Node type: ${nodeType}\n` +
+        log = `Node type: ${nodeType}\n` +
             `Network: ${network}\n` +
             `Platform: ${process.platform} (Architecture ${process.arch})\n\n${
-            nodelog}`;
+            log}`;
 
         dialog.showMessageBox({
             type: 'error',
             buttons: ['OK'],
-            message: global.i18n.t('divan.errors.nodeConnect'),
-            detail: nodelog,
+            message: global.i18n.t('mist.errors.nodeConnect'),
+            detail: log,
         }, () => {});
     }
 
@@ -531,7 +530,7 @@ class BitherNode extends EventEmitter {
         const cleanData = data.toString().replace(/[\r\n]+/, '');
         const nodeType = (this.type || 'node').toUpperCase();
 
-        log.trace(`${nodeType}: ${cleanData}`);
+        bitherNodeLog.trace(`${nodeType}: ${cleanData}`);
 
         if (!/^-*$/.test(cleanData) && !_.isEmpty(cleanData)) {
             this.emit('nodeLog', cleanData);
@@ -540,14 +539,14 @@ class BitherNode extends EventEmitter {
 
 
     _loadDefaults() {
-        log.trace('Load defaults');
+        bitherNodeLog.trace('Load defaults');
 
         this.defaultNodeType = Settings.nodeType || Settings.loadUserData('node') || DEFAULT_NODE_TYPE;
         this.defaultNetwork = Settings.network || Settings.loadUserData('network') || DEFAULT_NETWORK;
         this.defaultSyncMode = Settings.syncmode || Settings.loadUserData('syncmode') || DEFAULT_SYNCMODE;
 
-        log.info(Settings.syncmode, Settings.loadUserData('syncmode'), DEFAULT_SYNCMODE);
-        log.info(`Defaults loaded: ${this.defaultNodeType} ${this.defaultNetwork} ${this.defaultSyncMode}`);
+        bitherNodeLog.info(Settings.syncmode, Settings.loadUserData('syncmode'), DEFAULT_SYNCMODE);
+        bitherNodeLog.info(`Defaults loaded: ${this.defaultNodeType} ${this.defaultNetwork} ${this.defaultSyncMode}`);
     }
 }
 
