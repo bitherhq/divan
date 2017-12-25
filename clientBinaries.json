@@ -8,7 +8,7 @@
                         "download": {
                             "url": "https://github.com/bitherhq/go-bither/releases/download/v1.7.1/bith-linux-amd64-1.7.1.tar.gz",
                             "type": "tar",
-                            "md5": "5a609117258f4e2b6e73cd0391c9d77b",
+                            "md5": "3d0fc208bb21a9127acf2641240568cb",
                             "bin": "bith-linux-amd64-1.7.1/bith"
                         },
                         "bin": "bith",
